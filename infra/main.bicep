@@ -179,8 +179,8 @@ module cosmosAccountRole 'core/security/role-cosmos.bicep' = if (useCosmos){
   name: 'cosmos-account-role'
   params: {
     principalId: apiAppManagedIdentity.outputs.managedIdentityPrincipalId
-    databaseAccountId: cosmos.outputs.accountId
-    databaseAccountName: cosmos.outputs.accountName
+    databaseAccountId: useCosmos ? cosmos.outputs.accountId : ''
+    databaseAccountName: useCosmos ? cosmos.outputs.accountName : ''
   }
 }
 
@@ -189,8 +189,8 @@ module userCosmosAccountRole 'core/security/role-cosmos.bicep' = if (useCosmos &
   name: 'user-cosmos-account-role'
   params: {
     principalId: principalId
-    databaseAccountId: cosmos.outputs.accountId
-    databaseAccountName: cosmos.outputs.accountName
+    databaseAccountId: useCosmos ?  cosmos.outputs.accountId : ''
+    databaseAccountName: useCosmos ?  cosmos.outputs.accountName : ''
   }
 }
 

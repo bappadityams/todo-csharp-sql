@@ -13,10 +13,7 @@ $az_account = (az account show | ConvertFrom-Json)
 if ($az_account.user.type -eq "user") {
     $AZURE_PRINCIPAL_ID = $az_account.user.name
     #az ad user list --filter "mail eq '$($AZURE_PRINCIPAL_ID)'" --query "[0].id" -o tsv
-    $clientID = (az ad user list --filter "mail eq '$AZURE_PRINCIPAL_ID'" --query "[0].id" -o tsv)
-    if ($null -eq $clientID) {
-        $clientID = (az ad user list --filter "otherMails/any(c:c eq '$AZURE_PRINCIPAL_ID')"   --query "[0].id" -o tsv)
-    }
+    $clientID = (az ad user list --filter "userPrincipalName eq '$AZURE_PRINCIPAL_ID'" --query "[0].id" -o tsv)
     #$clientID = (az ad user show --id $AZURE_PRINCIPAL_ID | ConvertFrom-Json).id
 }
 elseif ($az_account.user.type -eq "servicePrincipal") {
