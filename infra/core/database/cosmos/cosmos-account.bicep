@@ -29,6 +29,8 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' = {
     apiProperties: (kind == 'MongoDB') ? { serverVersion: '4.2' } : {}
     capabilities: [ { name: 'EnableServerless' } ]
     minimalTlsVersion: 'Tls12'
+    disableKeyBasedMetadataWriteAccess: true
+    disableLocalAuth: true
   }
 }
 
