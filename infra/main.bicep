@@ -30,7 +30,7 @@ param apimServiceName string = ''
 param useAPIM bool = false
 
 @description('Flag to use Cosmos DB')
-param useCosmos bool = true
+param useCosmos bool
 
 @description('API Management SKU to use if APIM is enabled')
 param apimSku string = 'Consumption'
