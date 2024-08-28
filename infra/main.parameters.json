@@ -23,6 +23,9 @@
     "apimSku": {
       "value": "${APIM_SKU=Consumption}"
     },
+    "useCosmos": {
+      "value": "${USE_COSMOS=false}"
+    },  
     "runningOnGh": {
       "value": "${GITHUB_ACTIONS}"
     },

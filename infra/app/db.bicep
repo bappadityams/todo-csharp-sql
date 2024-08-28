@@ -9,7 +9,6 @@ param apiAppName string
 param userAssignedManagedIdentityId string
 param userassignedmanagedidentityName string
 param userAssignedManagedIdentityClientId string
-
 @secure()
 param sqlAdminPassword string
 

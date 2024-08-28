@@ -21,12 +21,16 @@ param keyVaultName string = ''
 param logAnalyticsName string = ''
 param resourceGroupName string = ''
 param sqlServerName string = ''
+param cosmosAccountName string = ''
 param sqlDatabaseName string = ''
 param webServiceName string = ''
 param apimServiceName string = ''
 
 @description('Flag to use Azure API Management to mediate the calls between the Web frontend and the backend API')
 param useAPIM bool = false
+
+@description('Flag to use Cosmos DB instead of SQL Server')
+param useCosmos bool
 
 @description('API Management SKU to use if APIM is enabled')
 param apimSku string = 'Consumption'
@@ -105,7 +109,7 @@ module apiKeyVaultAccess './core/security/keyvault-access.bicep' = {
   }
 }
 
-// Monitor application with Azure Monitor
+
 module monitoring './core/monitor/monitoring.bicep' = {
   name: 'monitoring'
   scope: rg
@@ -133,7 +137,7 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
 }
 
 // The application database
-module sqlServer './app/db.bicep' = {
+module sqlServer './app/db.bicep' = if (!useCosmos) {
   name: 'sql'
   scope: rg
   params: {
@@ -147,6 +151,46 @@ module sqlServer './app/db.bicep' = {
     userassignedmanagedidentityName: principalId
     userAssignedManagedIdentityClientId: clientID //will be populated from Pre provisioning hook script
     userAssignedManagedIdentityId: principalType == 'ServicePrincipal' ? principalId : ''
+  }
+}
+
+// The application database
+module cosmos './core/database/cosmos/sql/cosmos-sql-db.bicep' = if (useCosmos){
+  name: 'cosmos'
+  scope: rg
+  params: {
+    accountName: !empty(cosmosAccountName) ? cosmosAccountName : 'cosmos-keyless-${resourceToken}'
+    databaseName: 'TodoDb'
+    location: location
+    keyVaultName: keyVault.outputs.name
+    tags: tags
+    containers: [
+      {
+        name: 'TodoDb'
+        id: 'TodoDb'
+        partitionKey: '/__partitionKey'
+      }
+    ]
+  }
+}
+
+module cosmosAccountRole 'core/security/role-cosmos.bicep' = if (useCosmos){
+  scope: rg
+  name: 'cosmos-account-role'
+  params: {
+    principalId: apiAppManagedIdentity.outputs.managedIdentityPrincipalId
+    databaseAccountId: useCosmos ? cosmos.outputs.accountId : ''
+    databaseAccountName: useCosmos ? cosmos.outputs.accountName : ''
+  }
+}
+
+module userCosmosAccountRole 'core/security/role-cosmos.bicep' = if (useCosmos && !empty(principalId)) {
+  scope: rg
+  name: 'user-cosmos-account-role'
+  params: {
+    principalId: principalId
+    databaseAccountId: useCosmos ?  cosmos.outputs.accountId : ''
+    databaseAccountName: useCosmos ?  cosmos.outputs.accountName : ''
   }
 }
 
@@ -176,8 +220,9 @@ module api './app/api.bicep' = {
     keyVaultName: keyVault.outputs.name
     allowedOrigins: [ web.outputs.SERVICE_WEB_URI ]
     appSettings: {
-      AZURE_SQL_CONNECTION_STRING_KEY: sqlServer.outputs.connectionStringKey
+      AZURE_SQL_CONNECTION_STRING_KEY: !useCosmos ? sqlServer.outputs.connectionStringKey : ''
       AZURE_CLIENT_ID: apiAppManagedIdentity.outputs.managedIdentityClientId
+      AZURE_COSMOS_CONNECTION_STRING_KEY: useCosmos ? cosmos.outputs.endpoint : ''
     }
     userassignedmanagedidentityId: apiAppManagedIdentity.outputs.managedIdentityId
   }
@@ -213,7 +258,7 @@ module apimApi './app/apim-api.bicep' = if (useAPIM) {
 }
 
 // Data outputs
-output AZURE_SQL_CONNECTION_STRING_KEY string = sqlServer.outputs.connectionStringKey
+output AZURE_SQL_CONNECTION_STRING_KEY string = !useCosmos ? sqlServer.outputs.connectionStringKey : ''
 
 // App outputs
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
@@ -224,7 +269,8 @@ output AZURE_TENANT_ID string = tenant().tenantId
 output API_BASE_URL string = useAPIM ? apimApi.outputs.SERVICE_API_URI : api.outputs.SERVICE_API_URI
 output REACT_APP_WEB_BASE_URL string = web.outputs.SERVICE_WEB_URI
 output USE_APIM bool = useAPIM
+output USE_COSMOS bool = useCosmos
 output SERVICE_API_ENDPOINTS array = useAPIM ? [ apimApi.outputs.SERVICE_API_URI, api.outputs.SERVICE_API_URI ]: []
-output SQLDATABASENAME string = sqlServer.outputs.databaseName
-output SQLSERVERFQDN string = sqlServer.outputs.sqlServerFQDN
+output SQLDATABASENAME string = !useCosmos ? sqlServer.outputs.databaseName : ''
+output SQLSERVERFQDN string = !useCosmos ? sqlServer.outputs.sqlServerFQDN : ''
 output MSIAPIAPPNAME string = apiAppManagedIdentity.outputs.managedIdentityName
