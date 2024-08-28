@@ -12,7 +12,13 @@ az_account=$(az account show | jq -r '.user.type')
 
 if [[ $az_account == "user" ]]; then
     AZURE_PRINCIPAL_ID=$(az account show | jq -r '.user.name')
-    clientID=$(az ad user list --filter "userPrincipalName eq '$AZURE_PRINCIPAL_ID'" --query "[0].id" -o tsv)
+    clientID=$(az ad user list --filter "mail eq '$AZURE_PRINCIPAL_ID'" --query "[0].id" -o tsv)
+    if [ -z "$clientID" ]; then
+        clientID=$(az ad user list --filter "otherMails/any(c:c eq '$AZURE_PRINCIPAL_ID')" --query "[0].id" -o tsv)
+    fi
+    if [ -z "$clientID" ]; then
+        clientID=$(az ad user list --filter "userPrincipalName eq '$AZURE_PRINCIPAL_ID'" --query "[0].id" -o tsv)
+    fi
 elif [[ $az_account == "servicePrincipal" ]]; then
     AZURE_PRINCIPAL_ID=$(az account show | jq -r '.user.assignedIdentityInfo' | awk -F 'MSIClient-' '{print $2}')
     clientID=$(az ad sp show --id $AZURE_PRINCIPAL_ID | jq -r '.id')
