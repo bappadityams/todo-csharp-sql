@@ -9,8 +9,6 @@ param apiAppName string
 param userAssignedManagedIdentityId string
 param userassignedmanagedidentityName string
 param userAssignedManagedIdentityClientId string
-
-
 @secure()
 param sqlAdminPassword string
 
@@ -33,9 +31,6 @@ module sqlServer '../core/database/sqlserver/sqlserver.bicep' = {
     userAssignedManagedIdentityClientId: userAssignedManagedIdentityClientId
   }
 }
-
-
-
 
 output connectionStringKey string = sqlServer.outputs.connectionStringKey
 output databaseName string = sqlServer.outputs.databaseName

@@ -29,7 +29,7 @@ param apimServiceName string = ''
 @description('Flag to use Azure API Management to mediate the calls between the Web frontend and the backend API')
 param useAPIM bool = false
 
-@description('Flag to use Cosmos DB')
+@description('Flag to use Cosmos DB instead of SQL Server')
 param useCosmos bool
 
 @description('API Management SKU to use if APIM is enabled')
